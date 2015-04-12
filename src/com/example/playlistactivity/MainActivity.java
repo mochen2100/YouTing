@@ -30,7 +30,7 @@ public class MainActivity extends TabActivity {
 	private TabHost tabHost;
 	private ViewPager viewPager;
 	public static TextView footer;
-	public int git;
+	public int gitb;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
