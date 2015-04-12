@@ -30,7 +30,7 @@ public class MainActivity extends TabActivity {
 	private TabHost tabHost;
 	private ViewPager viewPager;
 	public static TextView footer;
-	public int gitb;
+	
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -39,7 +39,7 @@ public class MainActivity extends TabActivity {
 		setContentView(R.layout.musiclist_main);
 		context = MainActivity.this;
 		footer = (TextView) findViewById(R.id.text_footet_playingMusic);
-
+		int gitb;
 		manager = new LocalActivityManager(this, true);
 		manager.dispatchCreate(savedInstanceState);
 
