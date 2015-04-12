@@ -1,5 +1,5 @@
 package com.example.playlistactivity;
-
+/*Test git*/
 import java.util.ArrayList;
 
 import android.app.LocalActivityManager;
@@ -30,6 +30,7 @@ public class MainActivity extends TabActivity {
 	private TabHost tabHost;
 	private ViewPager viewPager;
 	public static TextView footer;
+	public int git;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
