@@ -304,6 +304,7 @@ int color slategrey 0x7f09006d
 int color snow 0x7f090007
 int color springgreen 0x7f090087
 int color steelblue 0x7f090079
+int color tabwidget_color 0x7f0900af
 int color tan 0x7f090041
 int color teal 0x7f09008d
 int color textColor 0x7f0900ab

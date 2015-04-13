@@ -6,12 +6,17 @@ import android.app.LocalActivityManager;
 import android.app.TabActivity;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.ColorStateList;
+import android.content.res.Resources;
+import android.content.res.XmlResourceParser;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
@@ -80,10 +85,19 @@ public class MainActivity extends TabActivity {
 
 	public void loadTabHost() {
 		tabHost = getTabHost();
-		tabHost.addTab(tabHost.newTabSpec("myFavoriteList").setIndicator("我的最爱", getResources().getDrawable(R.drawable.xin_big)).setContent(new Intent(context, MyFavoriteListActivity.class)));
-		tabHost.addTab(tabHost.newTabSpec("friendsMusicList").setIndicator("好友分享", getResources().getDrawable(R.drawable.play_tab)).setContent(new Intent(context, FriendsMusicListActivity.class)));
-		tabHost.addTab(tabHost.newTabSpec("localMusicList").setIndicator("本地音乐", getResources().getDrawable(R.drawable.all_tab)).setContent(new Intent(context, LocalMusicListActivity.class)));
+		tabHost.addTab(tabHost.newTabSpec("myFavoriteList").setIndicator("我的最爱").setContent(new Intent(context, MyFavoriteListActivity.class)));
+		tabHost.addTab(tabHost.newTabSpec("friendsMusicList").setIndicator("好友分享").setContent(new Intent(context, FriendsMusicListActivity.class)));
+		tabHost.addTab(tabHost.newTabSpec("localMusicList").setIndicator("本地音乐").setContent(new Intent(context, LocalMusicListActivity.class)));
 		
+  
+		Resources resource=(Resources)getBaseContext().getResources();  
+		ColorStateList csl=(ColorStateList)resource.getColorStateList(R.color.tabwidget_color); 
+		for(int i=0; i<tabHost.getTabWidget().getChildCount();++i){
+			TextView textView = (TextView)tabHost.getTabWidget().getChildAt(i).findViewById(android.R.id.title);  
+		    textView.setTextSize(18);  
+		    textView.setTextColor(csl);
+
+		}
 		tabHost.setOnTabChangedListener(new OnTabChangeListener() {
 
 			

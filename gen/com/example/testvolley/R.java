@@ -1476,6 +1476,7 @@ containing a value of this type.
         /** 暗灰蓝色 
          */
         public static final int steelblue=0x7f090079;
+        public static final int tabwidget_color=0x7f0900af;
         /** 亮灰色 
          */
         public static final int tan=0x7f090041;
