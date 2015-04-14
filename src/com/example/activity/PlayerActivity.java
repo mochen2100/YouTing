@@ -436,6 +436,7 @@ public class PlayerActivity extends FragmentActivity implements PlayerActivityCa
 		public void run() {
 			// TODO Auto-generated method stub
 			if (myMusic != null) {
+				mView_ib_play_or_pause.setImageResource(R.drawable.button_pause);
 				mView_tv_total_time.setText(TimeHelper
 						.milliSecondsToFormatTimeString(playerService.myPlayer.getDuration()));
 				//Log.v(TAG,"songduration"+playerService.myPlayer.getDuration());

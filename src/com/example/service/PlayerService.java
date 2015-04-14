@@ -8,6 +8,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.http.Header;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import com.example.activity.PlayerActivity;
 import com.example.cacheplayer.HttpGetProxy;
@@ -113,14 +116,10 @@ public class PlayerService extends IntentService {
 //		friendMusicList = application.getFriendMusicList();
 		localMusicList = application.getLocalMusicList();
 		//Log.v(TAG,"playList:"+myMusicList.get(1).getName());
+		playList = application.getPlayingList();
 		preferences = getSharedPreferences("youting",MODE_PRIVATE);		
 		editor = preferences.edit();
 		setIndex(preferences.getInt("INDEX", 0));
-		if( preferences.getInt("PLAYLIST", 0)==0){
-			setPlayList(myMusicList);
-		}else{
-			setPlayList(friendMusicList); 
-		}
 		listSize=playList.size();
 		if(listSize !=0){
 			music_pre = (this.index==0)?playList.get(listSize-1):playList.get(index-1);
@@ -140,11 +139,14 @@ public void play(){
 			
 		}
 		remoteControlClient.setPlaybackState(RemoteControlClient.PLAYSTATE_PLAYING);		
-		if(firstFlag)  MyApplication.get().setNotificationManager(MainActivity.getMainActivityCallBack().showCustomView());
+		if(firstFlag){
+			MyApplication.get().setNotificationManager(MainActivity.getMainActivityCallBack().showCustomView());
+			firstFlag=false;
+		}
 		Intent i=new Intent(this,PlayerReceiver.class);
 		i.putExtra("action", "play");
 		sendBroadcast(i);
-		if(firstFlag==true) firstFlag=false;
+
 		
 }
 
@@ -219,10 +221,44 @@ public void playNext() {
 		myPlayer.release();
 		if (playList.contains(m)){
 			index = playList.indexOf(m);
+			editor.putInt("INDEX", index);
+			editor.commit();
 			Log.v(TAG,"index:"+index);
 		}else{
+			
 			playList.add(m);
+			//playList发生改变，保存playList到sharePreference
+			JSONArray jArray = new JSONArray();
+			
+			for (int i=0;i<playList.size();i++){
+				Music music = playList.get(i);
+				JSONObject jObject = new JSONObject();
+				Log.v(TAG,music.getName());
+				long uid = music.getUid();
+				String local_id = "0";
+				if(uid == 0){
+					local_id = music.getPic_url();
+				}
+				try {
+					jObject.put("uid", uid);
+					jObject.put("local_id", local_id);
+					
+					jArray.put(i, jObject);
+				} catch (JSONException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				
+			}
+			listSize = playList.size();
 			index = playList.indexOf(m);
+			Log.v(TAG,jArray.toString());
+			editor.putString("playingList",jArray.toString());
+			editor.putInt("INDEX", index);
+			editor.commit();
+
+
+			
 		}
 		String url = m.getUrl();
 		setMusicInfo(m);
@@ -230,6 +266,7 @@ public void playNext() {
 		music = m;
 		music_pre = (index==0)?playList.get(listSize-1):playList.get(index-1);
 	    music_next =(index==(listSize-1))?playList.get(0):playList.get(index+1); 
+//	    MainActivity.getMainActivityCallBack().setPage();
 	    Log.v(TAG,"pre:"+music_pre.getName()+"next:"+music_next.getName());
 		proxy = new HttpGetProxy();
 		if(m.getIsLocal()){
@@ -262,7 +299,8 @@ public void playNext() {
 				Log.v(TAG,"duration:"+duration);
 				play();
 				if(PlayerActivity.getPlayerActivityCallBack()!=null){
-					PlayerActivity.getPlayerActivityCallBack().refreshview();}
+					PlayerActivity.getPlayerActivityCallBack().refreshview();
+					}
 			}
 			
 		});
@@ -359,13 +397,13 @@ public void playNext() {
 			Log.v(TAG,"playnextsetpage");
 			playNext();
 			
-		} else if (type.equals("pause")) {
-			Intent i=new Intent(this,PlayerReceiver.class);
-			if(isPlayFlag())
-				i.putExtra("action", "play");
-			else
-				i.putExtra("action", "pause");
-			sendBroadcast(i);
+		} else if (type.equals("pause") || type.equals("play")) {
+//			Intent i=new Intent(this,PlayerReceiver.class);
+//			if(isPlayFlag())
+//				i.putExtra("action", "play");
+//			else
+//				i.putExtra("action", "pause");
+//			sendBroadcast(i);
 			play_pause();
 		} 
 
@@ -380,23 +418,27 @@ public void playNext() {
 		// 取得歌曲同目录下的歌词文件绝对路径
 		File lyricfile = null;
 		String lyricLocalPath = myMusic.getLrc_cache_url();
-
-		if (lyricLocalPath!=null) {
-			// 本地有歌词，直接读取
-			Log.i(TAG, "loadLyric()--->本地有歌词，直接读取");
-			 mHasLyric=true;
-			 PlayerActivity.getPlayerActivityCallBack().showLrc();
-		} else if(myMusic.getLrc_url().equals("null")){
-			// 设置歌词为空
+		if(myMusic.getIsLocal()){
 			mHasLyric = false;
 			Log.i(TAG, "loadLyric()--->都木有歌词");
-			PlayerActivity.getPlayerActivityCallBack().showLrc();					
-			} else {	
-				// 尝试网络获取歌词
-					Log.i(TAG, "loadLyric()--->本地无歌词，尝试从网络获取");
-					 getLrcFormNet(myMusic);
-			}
-		
+			PlayerActivity.getPlayerActivityCallBack().showLrc();	
+		}else{
+			if (lyricLocalPath!=null) {
+				// 本地有歌词，直接读取
+				Log.i(TAG, "loadLyric()--->本地有歌词，直接读取");
+				 mHasLyric=true;
+				 PlayerActivity.getPlayerActivityCallBack().showLrc();
+			} else if(myMusic.getLrc_url() == null && myMusic.getLrc_url().equals("null")){
+				// 设置歌词为空
+				mHasLyric = false;
+				Log.i(TAG, "loadLyric()--->都木有歌词");
+				PlayerActivity.getPlayerActivityCallBack().showLrc();					
+				} else {	
+					// 尝试网络获取歌词
+						Log.i(TAG, "loadLyric()--->本地无歌词，尝试从网络获取");
+						 getLrcFormNet(myMusic);
+				}
+		   }
 		
 		}
 	
@@ -503,7 +545,36 @@ public void playNext() {
 	}
 
 	public void setPlayList(ArrayList<Music> playList) {
+		index = 0;
 		this.playList=(ArrayList<Music>)playList.clone();
+		application.setPlayingList(this.playList);
+		JSONArray jArray = new JSONArray();
+		
+		for (int i=0;i<playList.size();i++){
+			Music music = playList.get(i);
+			JSONObject jObject = new JSONObject();
+			Log.v(TAG,music.getName());
+			long uid = music.getUid();
+			String local_id = "0";
+			if(uid == 0){
+				local_id = music.getPic_url();
+			}
+			try {
+				jObject.put("uid", uid);
+				jObject.put("local_id", local_id);
+				
+				jArray.put(i, jObject);
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			
+		}
+		listSize = playList.size();
+		Log.v(TAG,jArray.toString());
+		editor.putString("playingList",jArray.toString());
+		editor.putInt("INDEX", 0);
+		editor.commit();
 	}
 
 	public Music getMusic_pre() {

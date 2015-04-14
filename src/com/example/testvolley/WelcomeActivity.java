@@ -10,6 +10,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -32,9 +34,11 @@ import de.greenrobot.daoexample.User;
 import de.greenrobot.daoexample.UserDao;
 import de.greenrobot.daoexample.UserDao.Properties;
 import android.app.Activity;
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
@@ -52,12 +56,13 @@ public class WelcomeActivity extends Activity implements WelcomeActivityCallBack
 	private DaoMaster daoMaster;
 	private UserDao userDao;
 	private MusicDao musicDao;
-	private QueryBuilder qb_music;
+	private QueryBuilder qb_music,qb_user;
 	private JSONObject jObject;
 	private String name,password,uid,status,alias;
     private ArrayList<Music> myMusicList = new ArrayList<Music>();
     private ArrayList<Music> friendMusicList = new ArrayList<Music>();
     private ArrayList<Music> localMusicList = new ArrayList<Music>();
+    private ArrayList<Music> playingList = new ArrayList<Music>();
     private ArrayList<User> friendList = new ArrayList<User>();
     private Map<String,String> headers;
 	private JsonObjectRequest jRequest;
@@ -66,6 +71,7 @@ public class WelcomeActivity extends Activity implements WelcomeActivityCallBack
 	private final static String get_friend_url = "http://121.42.164.7/index.php/Home/Index/get_friend_list";
 	private final static String get_mymusic_url = "http://121.42.164.7/index.php/Home/Index/get_my_music";
 	private final static String get_friendmusic_url = "http://121.42.164.7/index.php/Home/Index/get_friend_music";
+	private final static String get_playmusic_url = "http://121.42.164.7/index.php/Home/Index/get_play_music";
 	private final String qiniu_url = "http://7xi2lw.com1.z0.glb.clouddn.com/";
 	private final static String TAG = "welcome";
 	@Override
@@ -79,11 +85,70 @@ public class WelcomeActivity extends Activity implements WelcomeActivityCallBack
 		mQueue = application.getRequestQueue();
 		daoSession = application.getDaoSession(getApplicationContext());
 		musicDao = daoSession.getMusicDao();
+		userDao = daoSession.getUserDao();
 		qb_music = musicDao.queryBuilder();
+		// 读取本地音乐
 		localMusic();
 		preferences = getSharedPreferences("youting",MODE_PRIVATE);		
 		editor = preferences.edit();
-		//测试，login写完即删
+		// 获得上次的播放列表
+		String playingList_string = preferences.getString("playingList", null);
+		Log.v(TAG,"playingList"+playingList_string);
+		if(playingList_string != null){
+			try {
+				JSONArray jArray = new JSONArray(playingList_string);
+				for(int i=0;i<jArray.length();i++){
+					JSONObject jObject = jArray.getJSONObject(i);
+					if(jObject.getLong("uid") == 0){
+						//本地音乐
+						String id = (String)jObject.get("local_id");
+						long local_id = Long.parseLong(id);
+						Uri uri = Uri.parse("content://media/external/audio/media/" + local_id);
+				        ContentResolver mContentResolver = this.getContentResolver();
+				        Cursor cursor = mContentResolver.query(uri, new String[]{MediaStore.Audio.Media._ID,
+								MediaStore.Audio.Media.TITLE,MediaStore.Audio.Media.ARTIST,
+								MediaStore.Audio.Media.DATA}, null, null, null);
+				        if(cursor.moveToFirst()){
+				        	String title = cursor.getString(cursor
+									.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
+				        	String creator = cursor.getString(cursor
+									.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
+				        	String filePath = cursor.getString(cursor
+									.getColumnIndexOrThrow(MediaStore.Audio.Media.DATA));
+				        	int start = Environment.getExternalStorageDirectory().getAbsolutePath().length();
+				        	int end = filePath.lastIndexOf("/");
+				        	String name = filePath.substring(end);
+				        	filePath = filePath.substring(start,end);
+						
+				        	Log.v(TAG,"filePath:"+filePath);
+							String fake_url = qiniu_url+name;
+							
+							Music music = new Music((long) 0,title,creator,filePath,fake_url,null,null,id,true);
+							playingList.add(music);
+				            
+				        }
+				            cursor.close();
+						
+					}else{
+						//网络音乐
+						
+						long uid = jObject.getLong("uid");
+						qb_music = musicDao.queryBuilder();
+						qb_music.where(Properties.Uid.eq(uid));
+						if(qb_music.buildCount().count()>0){
+							Music music = (Music) qb_music.unique();
+							playingList.add(music);
+						}
+					} 
+				}
+			} catch (JSONException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+			application.setPlayingList(playingList);
+		}
+		
+		//login
 		name = preferences.getString("USER_NAME", "USER_NAME");
 		password = preferences.getString("PASSWORD", "PASSWORD");
 		jObject = new JSONObject();
@@ -247,13 +312,13 @@ public class WelcomeActivity extends Activity implements WelcomeActivityCallBack
 						userDao = daoSession.getUserDao();
 						//userDao.deleteAll();
 						User user = new User(uid,name,sex,mood,avatar);
-						QueryBuilder qb = userDao.queryBuilder();
-						qb.where(Properties.Uid.eq(uid));
-						long count = qb.buildCount().count();
+						qb_user = userDao.queryBuilder();
+						qb_user.where(Properties.Uid.eq(uid));
+						long count = qb_user.buildCount().count();
 						Log.v(TAG,"uid:"+uid);
 						if (count > 0){
 							User user1 = new User(uid,name,sex,mood,avatar);
-							userDao.update(user);
+							userDao.update(user1);
 							Log.v(TAG,"update");
 						}else{
 							
@@ -287,9 +352,9 @@ public class WelcomeActivity extends Activity implements WelcomeActivityCallBack
 	        		Iterator iterator = set.iterator();
 	        		while(iterator.hasNext()){
 	        			long uid = Long.parseLong((String)iterator.next());
-	        			QueryBuilder qb = userDao.queryBuilder();
-						qb.where(Properties.Uid.eq(uid));
-						User user =(User) qb.uniqueOrThrow();
+	        			qb_user = userDao.queryBuilder();
+	        			qb_user.where(Properties.Uid.eq(uid));
+						User user =(User) qb_user.uniqueOrThrow();
 						friendList.add(user);
 	        		}
 	        		application.setFriendList(friendList);
@@ -330,8 +395,8 @@ public class WelcomeActivity extends Activity implements WelcomeActivityCallBack
 						if (count > 0){
 							Music music_tmp = (Music) qb_music.unique();
 							String lrc_cache_url = music_tmp.getLrc_cache_url();
-							Music music1 = new Music(uid,name,artist,null,url,lrc_url,lrc_cache_url,pic_url,false);
-							musicDao.update(music1);
+							music = new Music(uid,name,artist,null,url,lrc_url,lrc_cache_url,pic_url,false);
+							musicDao.update(music);
 							Log.v(TAG,"update");
 						}else{
 							
@@ -441,13 +506,16 @@ public class WelcomeActivity extends Activity implements WelcomeActivityCallBack
 	public void localMusic(){
 		Cursor cursor;
 		Music music;
-		String[] audioColumns = {MediaStore.Audio.Media.TITLE,MediaStore.Audio.Media.ARTIST,
+		String[] audioColumns = { MediaStore.Audio.Media._ID,
+								MediaStore.Audio.Media.TITLE,MediaStore.Audio.Media.ARTIST,
 								MediaStore.Audio.Media.DATA,MediaStore.Audio.Media.ALBUM};
 		cursor = managedQuery(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-				audioColumns, null, null, MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
+				audioColumns, null, null,MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
 		if (cursor.moveToFirst()){
-			do{				
-					String title = cursor.getString(cursor 
+			do{		
+					String id = ""+cursor.getInt(cursor
+							.getColumnIndex(MediaStore.Audio.Media._ID));
+					String title = cursor.getString(cursor
 								.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
 					String creator = cursor.getString(cursor
 								.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));
@@ -460,8 +528,8 @@ public class WelcomeActivity extends Activity implements WelcomeActivityCallBack
 					
 					Log.v(TAG,"filePath:"+filePath);
 					String fake_url = qiniu_url+name;
-					Log.v(TAG,"fake_url:"+fake_url);
-					music = new Music((long) 0,title,creator,filePath,fake_url,null,null,null,true);
+					Log.v(TAG,"id:"+id);
+					music = new Music((long) 0,title,creator,filePath,fake_url,null,null,id,true);
 					localMusicList.add(music);
 			}while(cursor.moveToNext());
 			application.setLocalMusicList(localMusicList);

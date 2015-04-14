@@ -39,7 +39,11 @@
 				android:orientation="vertical"
 				android:layout_width="fill_parent"
 				android:layout_height="fill_parent">
-				
+				<ListView
+				    android:id="@+id/music_list_view"
+				    android:layout_width="fill_parent"
+				    android:layout_height="fill_parent"
+				    />
 			</LinearLayout>
 			<!-- 定义第二个标签页的内容 -->
 			<LinearLayout
@@ -47,7 +51,11 @@
 				android:orientation="vertical"
 				android:layout_width="fill_parent"
 				android:layout_height="fill_parent">
-				
+				<ListView
+				    android:id="@+id/user_list_view"
+				    android:layout_width="fill_parent"
+				    android:layout_height="fill_parent"
+				   />
 			</LinearLayout>
 		</FrameLayout>
 	</LinearLayout>

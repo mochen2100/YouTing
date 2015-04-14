@@ -1,5 +1,7 @@
 package com.example.receiver;
 
+import java.io.FileDescriptor;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
 import android.app.NotificationManager;
@@ -8,7 +10,10 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Bitmap.Config;
+import android.net.Uri;
+import android.os.ParcelFileDescriptor;
 import android.util.Log;
 import android.widget.RemoteViews;
 
@@ -35,20 +40,20 @@ public class PlayerReceiver extends BroadcastReceiver {
 	
 	public PlayerReceiver(){
 		mQueue = myApplication.getRequestQueue();
-		
+
 	}
 	
 	@Override
 	public void onReceive(Context context, Intent intent) {
 		String action=intent.getStringExtra("action");
-		//Log.d("action", action);
+//		setNotificationIntent(context);
+		Log.v(TAG+"onReceiver", action);
 			if(action.equals("close")){
 				myApplication.getNotificationManager().cancelAll();
 				myApplication.getService().pause();
 			    myApplication.getService().stopSelf();
 				System.exit(0);
 			}else if(action.equals("play")){
-				
 				myApplication.getNotification().contentView = new RemoteViews(myApplication.getPackageName(),
 						R.layout.music_notification_normal);
 				myApplication.getNotification().bigContentView = new RemoteViews(myApplication.getPackageName(),
@@ -62,26 +67,43 @@ public class PlayerReceiver extends BroadcastReceiver {
 				myApplication.getNotification().contentView.setTextViewText(R.id.notification_singer_name,playList.get(index).getArtist()==""?"未知艺术家":playList.get(index).getArtist());
 				myApplication.getNotification().bigContentView.setTextViewText(R.id.notification_song_name, playList.get(index).getName()==""?"未知歌名":playList.get(index).getName());
 				myApplication.getNotification().bigContentView.setTextViewText(R.id.notification_singer_name,playList.get(index).getArtist()==""?"未知艺术家":playList.get(index).getArtist());
-				ImageRequest imgRequest=new ImageRequest(playList.get(index).getPic_url(), new Response.Listener<Bitmap>() {
-					@Override
-					public void onResponse(Bitmap arg0) {
-						// TODO Auto-generated method stub
-						Log.v(TAG+"notification","onresponse");
-						myApplication.getNotification().contentView.setImageViewBitmap(R.id.notification_singer_pic, arg0);
-						myApplication.getNotification().bigContentView.setImageViewBitmap(R.id.notification_singer_pic, arg0);
-						myApplication.getNotificationManager().notify(1, myApplication.getNotification());
-					}
-				}, 50, 50, Config.RGB_565, new ErrorListener(){
-					@Override
-					public void onErrorResponse(VolleyError arg0) {
-						// TODO Auto-generated method stub
-						Log.v(TAG,"onerror");
-						myApplication.getNotification().contentView.setImageViewResource(R.id.notification_singer_pic,R.drawable.music_cover);
-						myApplication.getNotification().bigContentView.setImageViewResource(R.id.notification_singer_pic,R.drawable.music_cover);
-					}			
-				});
-				mQueue.add(imgRequest);
 				setNotificationIntent(context);
+				if(playList.get(index).getIsLocal()){
+					// 显示本地歌曲中图片
+					long id = Long.parseLong(playList.get(index).getPic_url());
+		        	Bitmap bm = getArtAlbum(id);
+		        	if(bm!= null){
+		        		myApplication.getNotification().contentView.setImageViewBitmap(R.id.notification_singer_pic, bm);
+						myApplication.getNotification().bigContentView.setImageViewBitmap(R.id.notification_singer_pic, bm);
+						myApplication.getNotificationManager().notify(1, myApplication.getNotification());
+
+		        	}
+					
+				}else{
+					ImageRequest imgRequest=new ImageRequest(playList.get(index).getPic_url(), new Response.Listener<Bitmap>() {
+						@Override
+						public void onResponse(Bitmap arg0) {
+							// TODO Auto-generated method stub
+							Log.v(TAG+"notification","onresponse");
+							myApplication.getNotification().contentView.setImageViewBitmap(R.id.notification_singer_pic, arg0);
+							myApplication.getNotification().bigContentView.setImageViewBitmap(R.id.notification_singer_pic, arg0);
+							myApplication.getNotificationManager().notify(1, myApplication.getNotification());
+
+						}
+					}, 50, 50, Config.RGB_565, new ErrorListener(){
+						@Override
+						public void onErrorResponse(VolleyError arg0) {
+							// TODO Auto-generated method stub
+							Log.v(TAG,"onerror");
+							myApplication.getNotification().contentView.setImageViewResource(R.id.notification_singer_pic,R.drawable.music_cover);
+							myApplication.getNotification().bigContentView.setImageViewResource(R.id.notification_singer_pic,R.drawable.music_cover);
+							myApplication.getNotificationManager().notify(1, myApplication.getNotification());
+						}			
+					});
+					mQueue.add(imgRequest);
+				}
+				
+
 					
 			}else if(action.equals("pause")){
 				
@@ -89,14 +111,17 @@ public class PlayerReceiver extends BroadcastReceiver {
 				myApplication.getNotification().contentView.setImageViewResource(R.id.play_pause_music, R.drawable.notification_play);
 				myApplication.getNotificationManager().notify(1, myApplication.getNotification());
 				Log.v(TAG,"pause");
+				setNotificationIntent(context);
 			}
 			else if(action.equals("next")){	
 			
 				
 			}
+			setNotificationIntent(context);
 	}
 	
 	public void setNotificationIntent(Context context) {
+
 		// TODO Auto-generated method stub
 		        //点击歌手图片回到播放界面
 				Intent reActivity=new Intent(context,MainActivity.class);
@@ -126,5 +151,23 @@ public class PlayerReceiver extends BroadcastReceiver {
 				myApplication.getNotification().contentView.setOnClickPendingIntent(R.id.next_music, nextpi);//----设置对应的按钮ID监控
 				myApplication.getNotification().bigContentView.setOnClickPendingIntent(R.id.next_music, nextpi);
 	}
+	public Bitmap getArtAlbum(long audioId) {
+		String str = "content://media/external/audio/media/" + audioId
+				+ "/albumart";
+		Uri uri = Uri.parse(str);
 
+		ParcelFileDescriptor pfd = null;
+		try {
+			pfd = myApplication.getContentResolver().openFileDescriptor(uri, "r");
+		} catch (FileNotFoundException e) {
+			return null;
+		}
+		Bitmap bm;
+		if (pfd != null) {
+			FileDescriptor fd = pfd.getFileDescriptor();
+			bm = BitmapFactory.decodeFileDescriptor(fd);
+			return bm;
+		}
+		return null;
+	}
 }

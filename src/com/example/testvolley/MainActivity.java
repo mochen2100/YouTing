@@ -1,6 +1,7 @@
 package com.example.testvolley;
 
 import java.io.File;
+import java.io.FileDescriptor;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -42,6 +43,7 @@ import android.media.RemoteControlClient;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.os.ParcelFileDescriptor;
 import android.support.v4.app.NotificationCompat.Builder;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
@@ -77,8 +79,6 @@ import com.android.volley.Response;
 import com.android.volley.Response.ErrorListener;
 import com.android.volley.VolleyError;
 import com.android.volley.toolbox.ImageRequest;
-
-
 import com.android.volley.toolbox.Volley;
 import com.example.testvolley.MyFriendsActivity;
 import com.example.testvolley.MyMessageActivity;
@@ -195,16 +195,12 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 		myMusicList = application.getMyMusicList();
 		friendMusicList = application.getFriendMusicList();
 		localMusicList = application.getLocalMusicList();
+		playList = application.getPlayingList();
 		
 		preferences = getSharedPreferences("youting",MODE_PRIVATE);		
 		index = preferences.getInt("INDEX", 0);
-		if( preferences.getInt("PLAYLIST", 0)==0){
-			playList = myMusicList;
-		}else if(preferences.getInt("PLAYLIST", 0) == 1){
-			playList = friendMusicList;
-		}else{
-			playList = localMusicList;
-		}
+		
+		
 		Log.v(TAG,"playList"+playList.size()+"myMusicList:"+myMusicList.size());
 		
 		viewPager = (ViewPager) findViewById(R.id.mini_music);
@@ -323,7 +319,8 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 		
 		
 		//给iv_icon绑定消息提示控件
-		if(MyMessageActivity.hasmessage==true){
+		if(application.hasMessage()){
+			Log.v(TAG,"has message");
 		redPoint1 = new RedPointView(this, iv_icon);
 		redPoint1.setContent(2);
 		redPoint1.setSizeContent(8);
@@ -433,7 +430,7 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 		ll_friends.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View arg0) {
-				Intent intent=new Intent(MainActivity.this,MyFriendsActivity.class);
+				Intent intent=new Intent(MainActivity.this,MusicMessageActivity.class);
 				startActivity(intent);  
 			}
 		});
@@ -503,8 +500,38 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
        		{
     		  playerservice.playPrevious();
               
-    		   final int viewNum=(page-1)%3+1; 
-    		   ImageRequest imgRequest=new ImageRequest(playerservice.getMusic_pre().getPic_url(), new Response.Listener<Bitmap>() {
+    		   final int viewNum=(page-1)%3+1;
+    		   if(playerservice.getMusic_pre().getIsLocal()){
+   	        	long id = Long.parseLong(playerservice.getMusic_pre().getPic_url());
+   	        	Bitmap bm = getArtAlbum(id);
+   	        	if(bm!= null){
+   	        		switch(viewNum){
+					case 1:
+						cover_music1.setImageBitmap(bm);
+						break;
+					case 2:
+						cover_music2.setImageBitmap(bm);
+						break;
+					case 3:
+						cover_music3.setImageBitmap(bm);
+						break;
+				
+				}
+   	        	}else{
+	        		switch(viewNum){
+					case 1:
+						cover_music1.setImageResource(R.drawable.music_cover);
+						break;
+					case 2:
+						cover_music2.setImageResource(R.drawable.music_cover);
+						break;
+					case 3:
+						cover_music3.setImageResource(R.drawable.music_cover);
+						break;
+	        		}
+	        	}
+   	        }else{
+   	        	ImageRequest imgRequest=new ImageRequest(playerservice.getMusic_pre().getPic_url(), new Response.Listener<Bitmap>() {
     				@Override
     				public void onResponse(Bitmap arg0) {
     					// TODO Auto-generated method stub
@@ -530,6 +557,8 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
     				}			
     			});
     			mQueue.add(imgRequest); 
+   	        }
+    		   
     	        switch (viewNum){
     	       	case 1: 
     	       	 song1.setText(playerservice.getMusic_pre().getName()==""?"未知歌名":playerservice.getMusic_pre().getName());
@@ -553,32 +582,65 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
     	 final int viewNum=(page+1)%3+1;
 		 playerservice.playNext();   		
          Log.v(TAG,"viewNum"+viewNum);
- 		 ImageRequest imgRequest=new ImageRequest(playerservice.getMusic_next().getPic_url(), new Response.Listener<Bitmap>() {
-			@Override
-			public void onResponse(Bitmap arg0) {
-				// TODO Auto-generated method stub
-				Log.v("succ","111");
-				switch(viewNum){
+         Log.v(TAG+"islocal",playerservice.getMusic_pre().getName()+playerservice.getMusic_pre().getIsLocal());
+         if(playerservice.getMusic_next().getIsLocal()){
+	        	long id = Long.parseLong(playerservice.getMusic_next().getPic_url());
+	        	Bitmap bm = getArtAlbum(id);
+	        	if(bm!= null){
+	        		switch(viewNum){
 					case 1:
-						cover_music1.setImageBitmap(arg0);
+						cover_music1.setImageBitmap(bm);
 						break;
 					case 2:
-						cover_music2.setImageBitmap(arg0);
+						cover_music2.setImageBitmap(bm);
 						break;
 					case 3:
-						cover_music3.setImageBitmap(arg0);
+						cover_music3.setImageBitmap(bm);
 						break;
+				
 				}
-								
-			}
-		}, 50, 50, Config.RGB_565, new ErrorListener(){
-			@Override
-			public void onErrorResponse(VolleyError arg0) {
-				// TODO Auto-generated method stub		
-				cover_music1.setImageResource(R.drawable.music_cover);
-			}			
-		});
-		mQueue.add(imgRequest);
+	        	}else{
+	        		switch(viewNum){
+					case 1:
+						cover_music1.setImageResource(R.drawable.music_cover);
+						break;
+					case 2:
+						cover_music2.setImageResource(R.drawable.music_cover);
+						break;
+					case 3:
+						cover_music3.setImageResource(R.drawable.music_cover);
+						break;
+	        		}
+	        	}
+	        }else{
+	        	ImageRequest imgRequest=new ImageRequest(playerservice.getMusic_next().getPic_url(), new Response.Listener<Bitmap>() {
+ 				@Override
+ 				public void onResponse(Bitmap arg0) {
+ 					// TODO Auto-generated method stub
+ 					Log.v("succ","111");
+ 					switch(viewNum){
+ 						case 1:
+ 							cover_music1.setImageBitmap(arg0);
+ 							break;
+ 						case 2:
+ 							cover_music2.setImageBitmap(arg0);
+ 							break;
+ 						case 3:
+ 							cover_music3.setImageBitmap(arg0);
+ 							break;
+ 					
+ 					}
+ 									
+ 				}
+ 			}, 50, 50, Config.RGB_565, new ErrorListener(){
+ 				@Override
+ 				public void onErrorResponse(VolleyError arg0) {
+ 					// TODO Auto-generated method stub					
+ 				}			
+ 			});
+ 			mQueue.add(imgRequest); 
+	        }
+
          switch (viewNum){
 	       	case 1: 
 	       	 song1.setText(playerservice.getMusic_next().getName()==""?"未知歌名":playerservice.getMusic_next().getName());
@@ -655,9 +717,13 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 			if(myMusicList.isEmpty()){
 				Toast.makeText(getApplicationContext(), "列表为空", Toast.LENGTH_SHORT).show();
 			}else{
-				if(playerservice.isFirstFlag())  MyApplication.get().setNotificationManager(showCustomView());
+				if(playerservice.isFirstFlag()){
+					MyApplication.get().setNotificationManager(showCustomView());
+
+				}
 				playerservice.setPlayList(myMusicList);
-				playerservice.playItems(index);
+				
+				playerservice.playItems(0);
 			}
 			break;
 		case R.drawable.ic_item_like:		
@@ -711,51 +777,84 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 	        singer3.setText(playList.get(index_pre).getArtist()==""?"未知艺术家":playList.get(index_pre).getArtist());
 	        song2.setText(playList.get(index_next).getName()==""?"未知歌名":playList.get(index_next).getName());
 	        singer2.setText(playList.get(index_next).getArtist()==""?"未知艺术家":playList.get(index_next).getArtist());
-	        ImageRequest imgRequest1=new ImageRequest(playList.get(index).getPic_url(), new Response.Listener<Bitmap>() {
-				@Override
-				public void onResponse(Bitmap arg0) {
-					// TODO Auto-generated method stub
-					Log.v("succ","111");
-					cover_music1.setImageBitmap(arg0);
-				}
-			}, 50, 50, Config.RGB_565, new ErrorListener(){
-				@Override
-				public void onErrorResponse(VolleyError arg0) {
-					// TODO Auto-generated method stub
-					cover_music1.setImageResource(R.drawable.music_cover);
-				}			
-			});
-			ImageRequest imgRequest2=new ImageRequest(playList.get(index_next).getPic_url(), new Response.Listener<Bitmap>() {
-				@Override
-				public void onResponse(Bitmap arg0) {
-					// TODO Auto-generated method stub
-					Log.v("succ","111");
-					cover_music2.setImageBitmap(arg0);
-				}
-			}, 50, 50, Config.RGB_565, new ErrorListener(){
-				@Override
-				public void onErrorResponse(VolleyError arg0) {
-					// TODO Auto-generated method stub
-					cover_music1.setImageResource(R.drawable.music_cover);
-				}			
-			});
-			ImageRequest imgRequest3=new ImageRequest(playList.get(index_pre).getPic_url(), new Response.Listener<Bitmap>() {
-				@Override
-				public void onResponse(Bitmap arg0) {
-					// TODO Auto-generated method stub
-					Log.v("succ","111");
-					cover_music3.setImageBitmap(arg0);
-				}
-			}, 50, 50, Config.RGB_565, new ErrorListener(){
-				@Override
-				public void onErrorResponse(VolleyError arg0) {
-					// TODO Auto-generated method stub
-					cover_music1.setImageResource(R.drawable.music_cover);
-				}			
-			});
-			mQueue.add(imgRequest1);
-			mQueue.add(imgRequest2);
-			mQueue.add(imgRequest3);
+	        if(playList.get(index).getIsLocal()){
+	        	long id = Long.parseLong(playList.get(index).getPic_url());
+	        	Bitmap bm = getArtAlbum(id);
+	        	if(bm!= null){
+	        		cover_music1.setImageBitmap(bm);
+	        	}else{
+	        		cover_music1.setImageResource(R.drawable.music_cover);
+	        	}
+	        }else{
+		        ImageRequest imgRequest1=new ImageRequest(playList.get(index).getPic_url(), new Response.Listener<Bitmap>() {
+					@Override
+					public void onResponse(Bitmap arg0) {
+						// TODO Auto-generated method stub
+						Log.v("succ","111");
+						cover_music1.setImageBitmap(arg0);
+					}
+				}, 50, 50, Config.RGB_565, new ErrorListener(){
+					@Override
+					public void onErrorResponse(VolleyError arg0) {
+						// TODO Auto-generated method stub
+						cover_music1.setImageResource(R.drawable.music_cover);
+					}			
+				});
+		        mQueue.add(imgRequest1);
+	        }
+	        if(playList.get(index_next).getIsLocal()){
+	        	long id = Long.parseLong(playList.get(index_next).getPic_url());
+	        	Bitmap bm = getArtAlbum(id);
+	        	if(bm!= null){
+	        		cover_music2.setImageBitmap(bm);
+	        	}else{
+	        		cover_music2.setImageResource(R.drawable.music_cover);
+	        	}
+	        }else{
+	        	ImageRequest imgRequest2=new ImageRequest(playList.get(index_next).getPic_url(), new Response.Listener<Bitmap>() {
+					@Override
+					public void onResponse(Bitmap arg0) {
+						// TODO Auto-generated method stub
+						Log.v("succ","111");
+						cover_music2.setImageBitmap(arg0);
+					}
+				}, 50, 50, Config.RGB_565, new ErrorListener(){
+					@Override
+					public void onErrorResponse(VolleyError arg0) {
+						// TODO Auto-generated method stub
+						cover_music2.setImageResource(R.drawable.music_cover);
+					}			
+				});
+		        mQueue.add(imgRequest2);
+	        }
+	        if(playList.get(index_pre).getIsLocal()){
+	        	long id = Long.parseLong(playList.get(index_pre).getPic_url());
+	        	Bitmap bm = getArtAlbum(id);
+	        	if(bm!= null){
+	        		cover_music3.setImageBitmap(bm);
+	        	}else{
+	        		cover_music3.setImageResource(R.drawable.music_cover);
+	        	}
+	        }else{
+	        	ImageRequest imgRequest3=new ImageRequest(playList.get(index_pre).getPic_url(), new Response.Listener<Bitmap>() {
+					@Override
+					public void onResponse(Bitmap arg0) {
+						// TODO Auto-generated method stub
+						Log.v("succ","111");
+						cover_music3.setImageBitmap(arg0);
+					}
+				}, 50, 50, Config.RGB_565, new ErrorListener(){
+					@Override
+					public void onErrorResponse(VolleyError arg0) {
+						// TODO Auto-generated method stub
+						cover_music3.setImageResource(R.drawable.music_cover);
+					}			
+				});
+				mQueue.add(imgRequest3);
+	        }
+			
+			
+
         }   
 //        Log.v(TAG,"name:"+playerservice.getMusic_pre().getName());
         
@@ -810,6 +909,9 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 	//显示Notification
 	@SuppressLint("NewApi")
 	public NotificationManager showCustomView() {
+		
+		playList = playerservice.getPlayList();
+		index = playerservice.getIndex();
 		final RemoteViews remoteViews = new RemoteViews(getPackageName(),
 				R.layout.music_notification);
 		final RemoteViews remoteViewsNormal = new RemoteViews(getPackageName(),
@@ -818,26 +920,43 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 		remoteViewsNormal.setTextViewText(R.id.notification_song_name, playList.get(index).getName()==""?"未知歌名":playList.get(index).getName());
 		remoteViews.setTextViewText(R.id.notification_singer_name,playList.get(index).getArtist()==""?"未知艺术家":playList.get(index).getArtist());
 		remoteViewsNormal.setTextViewText(R.id.notification_singer_name,playList.get(index).getArtist()==""?"未知艺术家":playList.get(index).getArtist());
-		ImageRequest imgRequest=new ImageRequest(playList.get(index).getPic_url(), new Response.Listener<Bitmap>() {
-			@Override
-			public void onResponse(Bitmap arg0) {
-				// TODO Auto-generated method stub
-				Log.v(TAG+"notification","onresponse");
-				remoteViews.setImageViewBitmap(R.id.notification_singer_pic, arg0);
-				remoteViewsNormal.setImageViewBitmap(R.id.notification_singer_pic, arg0);
-				application.getNotificationManager().notify(1, application.getNotification());
-
-			}
-		}, 50, 50, Config.RGB_565, new ErrorListener(){
-			@Override
-			public void onErrorResponse(VolleyError arg0) {
-				// TODO Auto-generated method stub
-				Log.v(TAG,"onerror");
-				remoteViews.setImageViewResource(R.id.notification_singer_pic,R.drawable.music_cover);
+		
+		if(playList.get(index).getIsLocal()){
+			long id = Long.parseLong(playList.get(index).getPic_url());
+        	Bitmap bm = getArtAlbum(id);
+        	if(bm!= null){
+        		
+        		remoteViews.setImageViewBitmap(R.id.notification_singer_pic, bm);
+				remoteViewsNormal.setImageViewBitmap(R.id.notification_singer_pic, bm);
+				
+        	}else{
+        		remoteViews.setImageViewResource(R.id.notification_singer_pic,R.drawable.music_cover);
 				remoteViewsNormal.setImageViewResource(R.id.notification_singer_pic,R.drawable.music_cover);
-			}			
-		});
-		mQueue.add(imgRequest);
+        	}
+        	
+        }else{
+        	ImageRequest imgRequest=new ImageRequest(playList.get(index).getPic_url(), new Response.Listener<Bitmap>() {
+    			@Override
+    			public void onResponse(Bitmap arg0) {
+    				// TODO Auto-generated method stub
+    				Log.v(TAG+"notification","onresponse");
+    				remoteViews.setImageViewBitmap(R.id.notification_singer_pic, arg0);
+    				remoteViewsNormal.setImageViewBitmap(R.id.notification_singer_pic, arg0);
+    				application.getNotificationManager().notify(1, application.getNotification());
+
+    			}
+    		}, 50, 50, Config.RGB_565, new ErrorListener(){
+    			@Override
+    			public void onErrorResponse(VolleyError arg0) {
+    				// TODO Auto-generated method stub
+    				Log.v(TAG,"onerror");
+    				remoteViews.setImageViewResource(R.id.notification_singer_pic,R.drawable.music_cover);
+    				remoteViewsNormal.setImageViewResource(R.id.notification_singer_pic,R.drawable.music_cover);
+    			}			
+    		});
+    		mQueue.add(imgRequest);
+		}
+		
 	
 		Builder builder = new Builder(MainActivity.this);
 		builder.setContent(remoteViews).setSmallIcon(R.drawable.ic_launcher)
@@ -906,7 +1025,7 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 //		int page = viewPager.getCurrentItem();
 		page_temp = 300;
 		viewPager.setCurrentItem(300);
-		
+		Log.v(TAG,playerservice.getMusic().getName());
 		MainActivity.this.runOnUiThread(new Runnable(){
 			
 			@Override
@@ -918,36 +1037,68 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 			        singer3.setText(playerservice.getMusic_pre().getArtist()==""?"未知艺术家":playerservice.getMusic_pre().getArtist());
 			        song2.setText(playerservice.getMusic_next().getName()==""?"未知歌名":playerservice.getMusic_next().getName());
 			        singer2.setText(playerservice.getMusic_next().getArtist()==""?"未知艺术家":playerservice.getMusic_next().getArtist());
-			        ImageRequest imgRequest1=new ImageRequest(playerservice.getMusic().getPic_url(), new Response.Listener<Bitmap>() {
-						@Override
-						public void onResponse(Bitmap arg0) {
-							// TODO Auto-generated method stub
-							Log.v("succ","111");
-							cover_music1.setImageBitmap(arg0);
-							
-						}
-					}, 50, 50, Config.RGB_565, new ErrorListener(){
-						@Override
-						public void onErrorResponse(VolleyError arg0) {
-							// TODO Auto-generated method stub
-							cover_music1.setImageResource(R.drawable.music_cover);
-						}			
-					});
-					ImageRequest imgRequest2=new ImageRequest(playerservice.getMusic_next().getPic_url(), new Response.Listener<Bitmap>() {
-						@Override
-						public void onResponse(Bitmap arg0) {
-							// TODO Auto-generated method stub
-							Log.v("succ","111");
-							cover_music2.setImageBitmap(arg0);
-							
-						}
-					}, 50, 50, Config.RGB_565, new ErrorListener(){
-						@Override
-						public void onErrorResponse(VolleyError arg0) {
-							// TODO Auto-generated method stub
-							cover_music2.setImageResource(R.drawable.music_cover);
-						}			
-					});
+			        if(playerservice.getMusic().getIsLocal()){
+			        	long id = Long.parseLong(playerservice.getMusic().getPic_url());
+			        	Bitmap bm = getArtAlbum(id);
+			        	if(bm!= null){
+			        		cover_music1.setImageBitmap(bm);
+			        	}else{
+			        		cover_music1.setImageResource(R.drawable.music_cover);
+			        	}
+			        	
+			        }else{
+				        ImageRequest imgRequest1=new ImageRequest(playerservice.getMusic().getPic_url(), new Response.Listener<Bitmap>() {
+							@Override
+							public void onResponse(Bitmap arg0) {
+								// TODO Auto-generated method stub
+								Log.v("succ","111");
+								cover_music1.setImageBitmap(arg0);
+								
+							}
+						}, 50, 50, Config.RGB_565, new ErrorListener(){
+							@Override
+							public void onErrorResponse(VolleyError arg0) {
+								// TODO Auto-generated method stub
+								cover_music1.setImageResource(R.drawable.music_cover);
+							}			
+						});
+				        mQueue.add(imgRequest1);
+			        }
+			        if(playerservice.getMusic_next().getIsLocal()){
+			        	long id = Long.parseLong(playerservice.getMusic_next().getPic_url());
+			        	Bitmap bm = getArtAlbum(id);
+			        	if(bm!= null){
+			        		cover_music2.setImageBitmap(bm);
+			        	}else{
+			        		cover_music2.setImageResource(R.drawable.music_cover);
+			        	}
+			        }else{
+						ImageRequest imgRequest2=new ImageRequest(playerservice.getMusic_next().getPic_url(), new Response.Listener<Bitmap>() {
+							@Override
+							public void onResponse(Bitmap arg0) {
+								// TODO Auto-generated method stub
+								Log.v("succ","111");
+								cover_music2.setImageBitmap(arg0);
+								
+							}
+						}, 50, 50, Config.RGB_565, new ErrorListener(){
+							@Override
+							public void onErrorResponse(VolleyError arg0) {
+								// TODO Auto-generated method stub
+								cover_music2.setImageResource(R.drawable.music_cover);
+							}			
+						});
+						mQueue.add(imgRequest2);
+			        }
+			        if(playerservice.getMusic_pre().getIsLocal()){
+			        	long id = Long.parseLong(playerservice.getMusic_pre().getPic_url());
+			        	Bitmap bm = getArtAlbum(id);
+			        	if(bm!= null){
+			        		cover_music3.setImageBitmap(bm);
+			        	}else{
+			        		cover_music3.setImageResource(R.drawable.music_cover);
+			        	}
+			        }else{
 					ImageRequest imgRequest3=new ImageRequest(playerservice.getMusic_pre().getPic_url(), new Response.Listener<Bitmap>() {
 						@Override
 						public void onResponse(Bitmap arg0) {
@@ -963,9 +1114,10 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 							cover_music3.setImageResource(R.drawable.music_cover);
 						}			
 					});
-					mQueue.add(imgRequest1);
-					mQueue.add(imgRequest2);
+					
+					
 					mQueue.add(imgRequest3);
+			        }
 			}
 			
 		});
@@ -978,11 +1130,11 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
 		friendMusicList = application.getFriendMusicList();
    		index = preferences.getInt("INDEX", 0);
 		if( preferences.getInt("PLAYLIST", 0)==0){
-			playList = myMusicList;
+			playList = (ArrayList<Music>)myMusicList.clone();
 		}else if(preferences.getInt("PLAYLIST", 0) == 1){
-			playList = friendMusicList;
+			playList = (ArrayList<Music>)friendMusicList.clone();
 		}else{
-			playList = localMusicList;
+			playList = (ArrayList<Music>)localMusicList.clone();;
 		}
 		playerservice.setPlayList(playList);
 		Log.v(TAG,"playList"+playList.size()+"myMusicList:"+myMusicList.size());
@@ -1001,7 +1153,26 @@ public class MainActivity extends InstrumentedActivity implements MainActivityCa
    			
    		});
    	}
-	 
+	public Bitmap getArtAlbum(long audioId) {
+		String str = "content://media/external/audio/media/" + audioId
+				+ "/albumart";
+		Uri uri = Uri.parse(str);
+
+		ParcelFileDescriptor pfd = null;
+		try {
+			pfd = this.getContentResolver().openFileDescriptor(uri, "r");
+		} catch (FileNotFoundException e) {
+			return null;
+		}
+		Bitmap bm;
+		if (pfd != null) {
+			FileDescriptor fd = pfd.getFileDescriptor();
+			bm = BitmapFactory.decodeFileDescriptor(fd);
+			return bm;
+		}
+		return null;
+	}
+ 
 
 }
 

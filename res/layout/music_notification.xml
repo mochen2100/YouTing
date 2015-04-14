@@ -11,7 +11,7 @@
         android:layout_height="100dp"
         android:src="@drawable/ic_launcher"
         android:layout_gravity="center_vertical" />
-    
+
     <LinearLayout 
          android:layout_height="100dp"
          android:layout_width="fill_parent"

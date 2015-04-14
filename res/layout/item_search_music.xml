@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal" 
+    >
+    <LinearLayout 
+        android:layout_width="0dip"
+    	android:layout_height="wrap_content"
+    	android:layout_weight="1"
+    	android:layout_marginLeft="15dip"
+    	android:layout_marginRight="15dip"
+    	android:orientation="vertical">
+      
+        <TextView 
+                android:id = "@+id/name"
+                android:layout_width="fill_parent"
+                android:layout_height="0dip"
+                android:layout_weight="1"
+                android:gravity="center_vertical"
+                />
+       <TextView 
+        	
+        	android:id="@+id/artist"
+        	android:layout_width="fill_parent"
+        	android:layout_height="0dip"
+        	android:layout_weight="0.5"
+        	android:ellipsize="end"
+    		android:singleLine="true"
+        	android:gravity="center_vertical"/>
+       </LinearLayout>
+       <ImageButton 
+        	android:id="@+id/like"
+        	android:layout_width="0dip"
+        	android:layout_height="fill_parent"
+        	android:layout_weight = "0.2"
+        	android:layout_gravity="center_vertical"
+ 			android:src="@drawable/ic_red"
+ 			android:background="#00000000"
+       	 	android:scaleType="centerInside"/>
+       <ImageButton 
+        	android:id="@+id/play"
+        	android:layout_width="0dip"
+        	android:layout_height="fill_parent"
+        	android:layout_weight = "0.2"
+        	android:layout_gravity="center_vertical"
+ 			android:src="@drawable/mini_play"
+ 		
+ 			android:background="#00000000"
+       	 	android:scaleType="centerInside"/>
+		
+    </LinearLayout>
+
+

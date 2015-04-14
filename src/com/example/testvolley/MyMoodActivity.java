@@ -16,6 +16,7 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
@@ -37,7 +38,7 @@ public class MyMoodActivity extends Activity {
 		mQueue = application.getRequestQueue();
 		content_mood = (EditText)findViewById(R.id.mood_edit);
 		mood = application.getLoginUser().getMood();
-		if (mood != null){
+		if (mood != null && !mood.equals("null")){
 			content_mood.setText(mood);
 		}
 		
@@ -55,6 +56,7 @@ public class MyMoodActivity extends Activity {
 	}
 	public void change_mood(){
 		mood = content_mood.getText().toString().trim();
+
 		if (mood.equals("")){
 			mood = "~ÔÝÎÞÐÄÇé~";
 		}

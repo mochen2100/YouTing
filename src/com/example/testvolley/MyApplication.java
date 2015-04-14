@@ -47,6 +47,7 @@ public class MyApplication extends Application {
 	    private ArrayList<Music> friendMusicList = new ArrayList<Music>();
 	    private ArrayList<Music> localMusicList = new ArrayList<Music>();
 	    private ArrayList<User> friendList = new ArrayList<User>();
+	    private ArrayList<Music> playingList = new ArrayList<Music>();
 	    private Map<String,String> header = new HashMap<String,String>();
 	    private User loginUser;
 	    private boolean isLogin = false;
@@ -169,8 +170,8 @@ public class MyApplication extends Application {
 	    public ArrayList<User> getFriendList(){
 	    	return this.friendList;
 	    }
-	    public void setFriendMusicList(){
-	    	
+	    public void setFriendMusicList(ArrayList<Music> list){
+	    	this.friendMusicList = list;
 	    }
 	    
 	    public ArrayList<Music> getFriendMusicList(){
@@ -181,6 +182,12 @@ public class MyApplication extends Application {
 		}
 		public void setLocalMusicList(ArrayList<Music> list){
 			this.localMusicList = list;
+		}
+		public ArrayList<Music> getPlayingList(){
+			return playingList;
+		}
+		public void setPlayingList(ArrayList<Music> list){
+			this.playingList = list;
 		}
 		public User getLoginUser(){
 			
@@ -264,7 +271,7 @@ public class MyApplication extends Application {
 			this.isLogin = b;
 		}
 		public boolean hasMessage(){
-			return hasMessage;
+			return this.hasMessage;
 		}
 		public void setMessage(boolean b){
 			this.hasMessage = b;

@@ -104,10 +104,11 @@ public class UserInfoSettingActivity extends Activity {
 		String temp_name="账户名称 "+user.getName();
 		String temp_mood="个性签名 "+user.getMood(); 
 		String mood = user.getMood();
+		Log.v(TAG,mood);
 		String avatar = user.getAvatar();
 		iv_return = (Button) findViewById(R.id.my_userinfo_return);
 		faceImage = (ImageView) findViewById(R.id.iv_face);
-		if(!mood.equals("null")){
+		if(mood.equals("null")){
 			temp_mood = "个性签名 "+"~暂无心情~";
 		}
 		if(avatar.equals("null")){
