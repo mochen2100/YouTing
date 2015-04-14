@@ -444,10 +444,10 @@ public class WelcomeActivity extends Activity implements WelcomeActivityCallBack
 		String[] audioColumns = {MediaStore.Audio.Media.TITLE,MediaStore.Audio.Media.ARTIST,
 								MediaStore.Audio.Media.DATA,MediaStore.Audio.Media.ALBUM};
 		cursor = managedQuery(MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
-				audioColumns, null, null, null);
+				audioColumns, null, null, MediaStore.Audio.Media.DEFAULT_SORT_ORDER);
 		if (cursor.moveToFirst()){
 			do{				
-					String title = cursor.getString(cursor
+					String title = cursor.getString(cursor 
 								.getColumnIndexOrThrow(MediaStore.Audio.Media.TITLE));
 					String creator = cursor.getString(cursor
 								.getColumnIndexOrThrow(MediaStore.Audio.Media.ARTIST));

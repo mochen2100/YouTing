@@ -4,7 +4,18 @@
     android:layout_height="fill_parent"
     android:background="#00000000"
     android:orientation="vertical" >
-
+    <com.example.playlistactivity.ClearEditText
+        android:id="@+id/filter_edit"
+        android:layout_marginTop="5dip"
+        android:layout_marginLeft="10dip"
+        android:layout_marginRight="10dip"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/search_bar_edit_selector"
+        android:drawableLeft="@drawable/search_bar_icon_normal"
+        android:hint="请输入歌名"
+        android:singleLine="true"
+        android:textSize="15.0dip" />
     <ListView
         android:id="@android:id/list"
         android:layout_width="fill_parent"

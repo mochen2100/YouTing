@@ -36,11 +36,11 @@ public final class R {
 		public static final int glowpadview_target_placement_radius = 0x7f050001;
 	}
 	public static final class drawable {
-		public static final int handle = 0x7f020072;
-		public static final int ic_launcher = 0x7f02007b;
-		public static final int ic_lockscreen_glowdot = 0x7f020080;
-		public static final int ic_lockscreen_handle_normal = 0x7f020081;
-		public static final int ic_lockscreen_handle_pressed = 0x7f020082;
+		public static final int handle = 0x7f020073;
+		public static final int ic_launcher = 0x7f02007c;
+		public static final int ic_lockscreen_glowdot = 0x7f020081;
+		public static final int ic_lockscreen_handle_normal = 0x7f020082;
+		public static final int ic_lockscreen_handle_pressed = 0x7f020083;
 	}
 	public static final class string {
 		public static final int app_name = 0x7f060000;

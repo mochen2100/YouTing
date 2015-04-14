@@ -15,6 +15,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextUtils;
+import android.text.TextWatcher;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -44,12 +47,19 @@ public class LocalMusicListActivity extends ListActivity {
 	public static Context context;
 	private MyApplication myApplication;
 	private PlayerService playerservice;
+	private ClearEditText mClearEditText;
+	private CharacterParser characterParser;
+	private PinyinComparator pinyinComparator;
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.localmusic_list_layout);
 		getWindow().setBackgroundDrawable(null);
 		listView = (ListView) findViewById(android.R.id.list);
+		mClearEditText = (ClearEditText)findViewById(R.id.filter_edit);
+		characterParser = CharacterParser.getInstance();
+		pinyinComparator = new PinyinComparator();
+		
 		context = this;
 		myApplication = (MyApplication)this.getApplicationContext();
 		playerservice = myApplication.getService();
@@ -69,6 +79,51 @@ public class LocalMusicListActivity extends ListActivity {
 				}
 			}
 		});
+		
+		//根据输入框输入值的改变来过滤搜索
+		mClearEditText.addTextChangedListener(new TextWatcher(){
+
+			@Override
+			public void onTextChanged(CharSequence s, int start, int before, int count) {
+				//当输入框里面的值为空，更新为原来的列表，否则为过滤数据列表
+				filterData(s.toString());
+				System.out.println("addTextChangedListener word"  );
+			}
+			
+			@Override
+			public void beforeTextChanged(CharSequence s, int start, int count,
+					int after) {
+				
+			}
+			
+			@Override
+			public void afterTextChanged(Editable s) {
+			}
+			
+		});
+	}
+	
+	private void filterData(String filterStr){
+		ArrayList<Music> filterDateList = new ArrayList<Music>();
+		
+		if(TextUtils.isEmpty(filterStr)){
+			filterDateList = myApplication.getLocalMusicList();
+		}else{
+			filterDateList.clear();
+			for(Music Music : myApplication.getLocalMusicList()){
+				String name = Music.getName();
+				if(name.indexOf(filterStr.toString()) != -1 || characterParser.getSelling(name).startsWith(filterStr.toString())){
+					filterDateList.add(Music);
+				}
+			}
+		}
+		
+		// 根据a-z进行排序
+		//Collections.sort(filterDateList, pinyinComparator);
+		//listAdapter.updateListView(filterDateList);
+		listAdapter = new MyListAdapter(this, filterDateList);
+		listView.setAdapter(listAdapter);
+		System.out.println("filterData word"  );
 	}
 
 	@Override
@@ -105,20 +160,25 @@ public class LocalMusicListActivity extends ListActivity {
 		private LayoutInflater mInflater;
 		private Context mContext;
 		private buttonViewHolder holder;
-
+		
+/*		public void updateListView(ArrayList<Music> list){
+			this.musicList =  (ArrayList<Music>)list.clone();
+			System.out.println("updateListView word" + musicList.size() );
+			listAdapter.notifyDataSetChanged();
+		}	*/	
 		public MyListAdapter(Context context, List<Music> appList) {
-			musicList = (ArrayList<Music>) appList;
+			this.musicList =  (ArrayList<Music>)appList;
 			mContext = context;
 			mInflater = (LayoutInflater) mContext.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
 		}
 
 		public int getCount() {
-			return musicList.size();
+			return this.musicList.size();
 		}
 
 		public Object getItem(int position) {
-			return musicList.get(position);
+			return this.musicList.get(position);
 		}
 
 		public long getItemId(int position) {
@@ -126,7 +186,7 @@ public class LocalMusicListActivity extends ListActivity {
 		}
 
 		public void removeItem(int position) {
-			musicList.remove(position);
+			this.musicList.remove(position);
 			this.notifyDataSetChanged();
 		} 
 
@@ -186,6 +246,8 @@ public class LocalMusicListActivity extends ListActivity {
 		}
 
 	}
+	
+	
 
 	public class AllMusic_List_asyncTask extends AsyncTask<String, Void, Void> {
 
