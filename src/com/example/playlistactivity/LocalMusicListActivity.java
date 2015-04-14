@@ -49,7 +49,7 @@ public class LocalMusicListActivity extends ListActivity {
 	private PlayerService playerservice;
 	private ClearEditText mClearEditText;
 	private CharacterParser characterParser;
-	private PinyinComparator pinyinComparator;
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -58,7 +58,6 @@ public class LocalMusicListActivity extends ListActivity {
 		listView = (ListView) findViewById(android.R.id.list);
 		mClearEditText = (ClearEditText)findViewById(R.id.filter_edit);
 		characterParser = CharacterParser.getInstance();
-		pinyinComparator = new PinyinComparator();
 		
 		context = this;
 		myApplication = (MyApplication)this.getApplicationContext();
